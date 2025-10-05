@@ -375,7 +375,6 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
         }
     ]
 }
-*** End Patch
 
 
 def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame]:
