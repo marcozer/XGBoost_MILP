@@ -35,6 +35,21 @@ EXCLUDE_COLS: List[str] = [
 
 MISSING_SUFFIX = "_missing"
 
+
+def apply_calibration(probabilities: np.ndarray, calibrator) -> np.ndarray:
+    """Apply saved calibration model to raw probabilities."""
+    if calibrator is None:
+        return probabilities
+
+    if hasattr(calibrator, "predict_proba"):
+        calibrated = calibrator.predict_proba(probabilities.reshape(-1, 1))[:, 1]
+    elif hasattr(calibrator, "transform"):
+        calibrated = calibrator.transform(probabilities)
+    else:
+        raise AttributeError("Unsupported calibrator type")
+
+    return np.clip(calibrated, 1e-6, 1 - 1e-6)
+
 # Configuration of the user interface for each feature
 FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
     "Clinical background": [
@@ -377,6 +392,7 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
+@st.cache_resource(show_spinner=False)
 def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame]:
     """Load trained model, metadata, and training dataset."""
 
@@ -553,7 +569,7 @@ def predict_probabilities(
     X_imputed_df = pd.DataFrame(X_imputed, columns=model_columns)
 
     probabilities = model.predict_proba(X_imputed_df)[:, 1]
-    calibrated = calibrator.transform(probabilities) if calibrator is not None else probabilities
+    calibrated = apply_calibration(probabilities, calibrator)
     return probabilities, calibrated
 
 
@@ -606,6 +622,7 @@ def main() -> None:
     )
 
 
+@st.cache_resource(show_spinner=False)
 def initialise_pipeline():
     model, calibrator, feature_mapping_df, feature_types, training_df = load_artifacts()
 
@@ -637,7 +654,6 @@ def initialise_pipeline():
         "mapping_dict": mapping_dict,
         "indicator_columns": indicator_columns,
         "feature_types": feature_types,
-        "training_df": training_df,
         "feature_columns": feature_columns,
     }
 
