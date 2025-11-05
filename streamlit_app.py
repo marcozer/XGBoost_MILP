@@ -377,9 +377,12 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
+@st.cache_resource
 def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame]:
-    """Load trained model, metadata, and training dataset."""
+    """Load trained model, metadata, and training dataset.
 
+    This function is cached to avoid reloading files from disk on every rerun.
+    """
     base_dir = Path(__file__).resolve().parent
     artifacts_dir = base_dir / "results" / "production_imputed"
 
@@ -571,7 +574,10 @@ def main() -> None:
         "Provide clinical data below to estimate the probability of achieving a BEST postoperative performance."
     )
 
-    artifacts = initialise_pipeline()
+    # Load pipeline with a spinner for first-time loading
+    with st.spinner("Loading model and preprocessing artifacts..."):
+        artifacts = initialise_pipeline()
+
     model = artifacts["model"]
     calibrator = artifacts["calibrator"]
     imputer = artifacts["imputer"]
@@ -606,7 +612,13 @@ def main() -> None:
     )
 
 
+@st.cache_resource
 def initialise_pipeline():
+    """Load and cache all model artifacts and fitted preprocessors.
+
+    This function is cached to avoid reloading models and refitting
+    the imputer on every Streamlit rerun.
+    """
     model, calibrator, feature_mapping_df, feature_types, training_df = load_artifacts()
 
     mapping_dict = build_mapping_dict(feature_mapping_df)
@@ -636,8 +648,6 @@ def initialise_pipeline():
         "model_columns": model_columns,
         "mapping_dict": mapping_dict,
         "indicator_columns": indicator_columns,
-        "feature_types": feature_types,
-        "training_df": training_df,
         "feature_columns": feature_columns,
     }
 
