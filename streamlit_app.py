@@ -35,21 +35,6 @@ EXCLUDE_COLS: List[str] = [
 
 MISSING_SUFFIX = "_missing"
 
-
-def apply_calibration(probabilities: np.ndarray, calibrator) -> np.ndarray:
-    """Apply saved calibration model to raw probabilities."""
-    if calibrator is None:
-        return probabilities
-
-    if hasattr(calibrator, "predict_proba"):
-        calibrated = calibrator.predict_proba(probabilities.reshape(-1, 1))[:, 1]
-    elif hasattr(calibrator, "transform"):
-        calibrated = calibrator.transform(probabilities)
-    else:
-        raise AttributeError("Unsupported calibrator type")
-
-    return np.clip(calibrated, 1e-6, 1 - 1e-6)
-
 # Configuration of the user interface for each feature
 FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
     "Clinical background": [
@@ -392,10 +377,12 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource
 def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame]:
-    """Load trained model, metadata, and training dataset."""
+    """Load trained model, metadata, and training dataset.
 
+    This function is cached to avoid reloading files from disk on every rerun.
+    """
     base_dir = Path(__file__).resolve().parent
     artifacts_dir = base_dir / "results" / "production_imputed"
 
@@ -569,7 +556,7 @@ def predict_probabilities(
     X_imputed_df = pd.DataFrame(X_imputed, columns=model_columns)
 
     probabilities = model.predict_proba(X_imputed_df)[:, 1]
-    calibrated = apply_calibration(probabilities, calibrator)
+    calibrated = calibrator.transform(probabilities) if calibrator is not None else probabilities
     return probabilities, calibrated
 
 
@@ -587,7 +574,10 @@ def main() -> None:
         "Provide clinical data below to estimate the probability of achieving a BEST postoperative performance."
     )
 
-    artifacts = initialise_pipeline()
+    # Load pipeline with a spinner for first-time loading
+    with st.spinner("Loading model and preprocessing artifacts..."):
+        artifacts = initialise_pipeline()
+
     model = artifacts["model"]
     calibrator = artifacts["calibrator"]
     imputer = artifacts["imputer"]
@@ -622,8 +612,13 @@ def main() -> None:
     )
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource
 def initialise_pipeline():
+    """Load and cache all model artifacts and fitted preprocessors.
+
+    This function is cached to avoid reloading models and refitting
+    the imputer on every Streamlit rerun.
+    """
     model, calibrator, feature_mapping_df, feature_types, training_df = load_artifacts()
 
     mapping_dict = build_mapping_dict(feature_mapping_df)
@@ -653,7 +648,6 @@ def initialise_pipeline():
         "model_columns": model_columns,
         "mapping_dict": mapping_dict,
         "indicator_columns": indicator_columns,
-        "feature_types": feature_types,
         "feature_columns": feature_columns,
     }
 
