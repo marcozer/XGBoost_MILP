@@ -378,7 +378,7 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
 
 
 @st.cache_resource
-def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame]:
+def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, List[str]], pd.DataFrame, Dict]:
     """Load trained model, metadata, and training dataset.
 
     This function is cached to avoid reloading files from disk on every rerun.
@@ -390,6 +390,7 @@ def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, Lis
     calibrator_path = artifacts_dir / "models" / "final_calibrator.pkl"
     mappings_path = artifacts_dir / "results" / "feature_mappings.csv"
     feature_types_path = artifacts_dir / "results" / "feature_types.json"
+    metrics_path = artifacts_dir / "results" / "metrics.json"
     training_path = base_dir / "base4.csv"
 
     model = joblib.load(model_path)
@@ -397,9 +398,11 @@ def load_artifacts() -> Tuple[object, object | None, pd.DataFrame, Dict[str, Lis
     feature_mappings = pd.read_csv(mappings_path)
     with open(feature_types_path, "r", encoding="utf-8") as fh:
         feature_types = json.load(fh)
+    with open(metrics_path, "r", encoding="utf-8") as fh:
+        metrics = json.load(fh)
     training_df = pd.read_csv(training_path)
 
-    return model, calibrator, feature_mappings, feature_types, training_df
+    return model, calibrator, feature_mappings, feature_types, training_df, metrics
 
 
 def build_mapping_dict(feature_mappings: pd.DataFrame) -> Dict[str, Dict[str, float]]:
@@ -562,9 +565,8 @@ def predict_probabilities(
 
 def render_predictions(raw: np.ndarray, calibrated: np.ndarray) -> None:
     st.success("Prediction complete")
-    st.metric("Raw probability", f"{raw[0]:.1%}")
-    st.metric("Calibrated probability", f"{calibrated[0]:.1%}")
-    st.caption("Calibrated output applies the Platt scaling trained in the production pipeline.")
+    st.metric("BEST Performer Probability", f"{calibrated[0]:.1%}")
+    st.caption("This probability is calibrated using Platt scaling from the production pipeline.")
 
 
 def main() -> None:
@@ -585,6 +587,7 @@ def main() -> None:
     mapping_dict = artifacts["mapping_dict"]
     indicator_columns = artifacts["indicator_columns"]
     feature_columns = artifacts["feature_columns"]
+    metrics = artifacts["metrics"]
 
     inputs = collect_user_inputs()
 
@@ -604,11 +607,33 @@ def main() -> None:
         with st.expander("Submitted values"):
             st.dataframe(user_df)
 
+    # Sidebar with model information
     st.sidebar.header("About")
     st.sidebar.markdown(
-        "- Predictions reuse the exported production XGBoost model; no retraining occurs on the platform.\n"
-        "- Toggle the missing indicators whenever information is unavailable—the app will set the corresponding value to missing before imputation.\n"
-        "- Use the calibrated probability as decision support alongside clinical judgement."
+        "This tool provides risk prediction for achieving BEST (optimal) postoperative performance "
+        "following minimally invasive pancreatic surgery."
+    )
+
+    st.sidebar.markdown("### Model Performance")
+    overall_metrics = metrics.get("overall", {})
+    st.sidebar.metric("AUC (Calibrated)", f"{overall_metrics.get('calibrated_auc', 0):.3f}")
+    st.sidebar.metric("Brier Score", f"{overall_metrics.get('calibrated_brier', 0):.3f}")
+    st.sidebar.metric("Expected Calibration Error", f"{overall_metrics.get('calibrated_ece', 0):.3f}")
+
+    st.sidebar.markdown(f"**Training samples:** {metrics.get('n_samples', 'N/A')}")
+    st.sidebar.markdown(f"**Features:** {metrics.get('n_features', 'N/A')}")
+    st.sidebar.markdown(f"**Method:** {metrics.get('method', 'N/A')}")
+
+    st.sidebar.markdown("### Usage Notes")
+    st.sidebar.markdown(
+        "- Predictions use the production XGBoost model with Platt scaling calibration\n"
+        "- Toggle missing indicators when information is unavailable\n"
+        "- Use predictions as decision support alongside clinical judgement"
+    )
+
+    st.sidebar.markdown("### Association Française de Chirurgie")
+    st.sidebar.markdown(
+        "Learn more about the AFC: [www.association-francaise-chirurgie.fr](https://www.association-francaise-chirurgie.fr)"
     )
 
 
@@ -619,7 +644,7 @@ def initialise_pipeline():
     This function is cached to avoid reloading models and refitting
     the imputer on every Streamlit rerun.
     """
-    model, calibrator, feature_mapping_df, feature_types, training_df = load_artifacts()
+    model, calibrator, feature_mapping_df, feature_types, training_df, metrics = load_artifacts()
 
     mapping_dict = build_mapping_dict(feature_mapping_df)
     X_train, indicator_columns = prepare_features(
@@ -649,6 +674,7 @@ def initialise_pipeline():
         "mapping_dict": mapping_dict,
         "indicator_columns": indicator_columns,
         "feature_columns": feature_columns,
+        "metrics": metrics,
     }
 
 
