@@ -348,13 +348,6 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
             "step": 1
         },
         {
-            "column": "Blood_transfusion_missing",
-            "label": "Blood transfusion missing",
-            "type": "checkbox",
-            "default": False,
-            "help": "Tick if transfusion data is unavailable"
-        },
-        {
             "column": "Drainage_modalities",
             "label": "Drainage modality",
             "type": "select",
