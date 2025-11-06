@@ -609,7 +609,7 @@ def main() -> None:
         "- Use predictions as decision support alongside clinical judgement"
     )
 
-    st.sidebar.markdown("Built by Clément Pastier and Marc-Anthony Chouillard for the ### Association Française de Chirurgie")
+    st.sidebar.markdown("Built by Clément Pastier and Marc-Anthony Chouillard for the **Association Française de Chirurgie")
     st.sidebar.markdown(
         "Learn more about the AFC: [www.association-francaise-chirurgie.fr](https://www.association-francaise-chirurgie.fr)"
     )
@@ -636,7 +636,7 @@ def initialise_pipeline():
     imputer = IterativeImputer(
         random_state=42,
         max_iter=10,
-        initial_strategy="median",
+        initial_strategy="median", # median imputation for the variables not filled by the user on the UI (uses db from github repo)
         imputation_order="ascending",
     )
     imputer.fit(X_train)
