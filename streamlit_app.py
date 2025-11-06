@@ -609,7 +609,7 @@ def main() -> None:
         "- Use predictions as decision support alongside clinical judgement"
     )
 
-    st.sidebar.markdown("### Build by Clément Pastier and Marc-Anthony Chouillard for the Association Française de Chirurgie")
+    st.sidebar.markdown("Built by Clément Pastier and Marc-Anthony Chouillard for the ### Association Française de Chirurgie")
     st.sidebar.markdown(
         "Learn more about the AFC: [www.association-francaise-chirurgie.fr](https://www.association-francaise-chirurgie.fr)"
     )
