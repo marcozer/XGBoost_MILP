@@ -4,10 +4,10 @@ XGBoost model for prediction of Best Performers after Laparoscopic Distal Pancre
 
 # Deployment 
 
-Model has been deployed on [streamlit platform] (https://xgboostmilp.streamlit.app/) 
+Model has been deployed on [streamlit platform](https://xgboostmilp.streamlit.app/) 
 
 # Credits 
 
-This model has been built by Marc-Anthony Chouillard and Clément Pastier, for the Association Française de Chirurgie [AFC] (https://www.association-francaise-chirurgie.fr/)
+This model has been built by Marc-Anthony Chouillard and Clément Pastier, for the Association Française de Chirurgie [AFC](https://www.association-francaise-chirurgie.fr/)
 
 
