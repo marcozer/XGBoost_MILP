@@ -216,13 +216,6 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
             "default": "none"
         },
         {
-            "column": "Center_expertise",
-            "label": "Center expertise",
-            "type": "select",
-            "options": ["low", "intermediate", "high"],
-            "default": "high"
-        },
-        {
             "column": "Center_MIP_mean",
             "label": "Center MIP mean",
             "type": "slider",
@@ -234,7 +227,7 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "column": "Pancreatic_section_level",
-            "label": "Pancreatic section level",
+            "label": "Pancreatic section level (left-sided anatomy)",
             "type": "select",
             "options": ["head", "neck", "body tail"],
             "default": "neck"
@@ -242,14 +235,8 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "Operative plan": [
         {
-            "column": "Panned_splenectomy",
-            "label": "Planned splenectomy",
-            "type": "checkbox",
-            "default": True
-        },
-        {
             "column": "LDP_modalities ",
-            "label": "LDP modalities",
+            "label": "LSP modality (left splenopancreatectomy context)",
             "type": "select",
             "options": ["Warshaw", "Kimura", "distal splenopancreatectomy"],
             "default": "distal splenopancreatectomy"
@@ -306,6 +293,12 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
         }
     ],
     "Intraoperative course": [
+        {
+            "column": "Panned_splenectomy",
+            "label": "Planned splenectomy (recorded intra-operatively)",
+            "type": "checkbox",
+            "default": True
+        },
         {
             "column": "Operative_duration",
             "label": "Operative duration (min)",
