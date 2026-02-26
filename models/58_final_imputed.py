@@ -1529,7 +1529,7 @@ P-value (DeLong): <0.001'''
         
         # Define allowed multi-category features
         allowed_multicategory = [
-            'Center_expertise', 'LDP_modalities ', 'Pancreatic_section_level', 
+            'LDP_modalities ', 'Pancreatic_section_level',
             'Cholecystectomy', 'Drainage_modalities', 'Specimen_extraction_scar'
         ]
         
@@ -1602,15 +1602,6 @@ P-value (DeLong): <0.001'''
                 feat_values = feat_values_remapped
             
             # Remap Center_expertise to match desired display order
-            if feat_name == 'Center_expertise':
-                # Original: 0=High, 1=Intermediate, 2=Low
-                # Desired:  0=Low, 1=Intermediate, 2=High
-                feat_values_remapped = feat_values.copy()
-                feat_values_remapped[feat_values == 0] = 2  # High → 2
-                feat_values_remapped[feat_values == 1] = 1  # Intermediate → 1
-                feat_values_remapped[feat_values == 2] = 0  # Low → 0
-                feat_values = feat_values_remapped
-            
             # Add y position for each sample
             y_pos.extend([i] * len(feat_shap))
             x_values_list.extend(feat_shap)
@@ -1657,24 +1648,21 @@ P-value (DeLong): <0.001'''
             
             # Create informative labels
             if feat_name == 'Men':
-                # Men variable: 0 = Not Men (Female), 1 = Men (Male)
-                label = "Sex (0=Female, 1=Male)"
+                label = "Sex (red=Female, blue=Male)"
             elif feat_name == 'Panned_splenectomy':
                 # Fix typo in variable name
                 label = "Planned_splenectomy (0=No, 1=Yes)"
             elif feat_name == 'pancreatic_texture':
-                label = "Pancreatic texture (blue=hard, red=soft)"
+                label = "Pancreatic texture (red=soft, blue=hard)"
             elif feat_name == 'Pancreatic_approach':
                 label = f"{feat_name} (0=coloepiploic, 1=gastrocolic)"
             elif feat_name == 'Drainage_modalities':
                 # Note: actual encoding is messy (0=blank, 1="0", 2=active, 3=passive)
                 # Display simplified version as requested
                 label = f"{feat_name} (0=no drainage, 1=passive, 2=active)"
-            elif feat_name == 'Center_expertise':
-                label = f"{feat_name} (0=Low, 1=Intermediate, 2=High)"
             elif feat_name == 'LDP_modalities ' or feat_name == 'LDP_modalities':
                 # Values have been remapped for display
-                label = "LDP_modalities (0=kimura, 1=warshaw, 2=distal_SPG)"
+                label = "LDP modalities (0=Kimura, 1=Warshaw, 2=LSP)"
             elif feat_name == 'Pancreatic_section_level':
                 label = f"{feat_name} (0=isthmus, 1=left, 2=right)"
             elif feat_name == 'Cholecystectomy':
@@ -1709,6 +1697,7 @@ P-value (DeLong): <0.001'''
         # Set y-axis labels
         ax.set_yticks(range(len(feature_order)))
         ax.set_yticklabels(labels_list, fontsize=9)
+        ax.invert_yaxis()
         
         # Add vertical line at x=0
         ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
@@ -1719,13 +1708,24 @@ P-value (DeLong): <0.001'''
                     fontsize=14, fontweight='bold')
         ax.grid(True, alpha=0.2, axis='x')
         
-        # Add standard colorbar
+        # Add horizontal colorbar
         sm = plt.cm.ScalarMappable(cmap=plt.cm.coolwarm, norm=plt.Normalize(vmin=0, vmax=1))
         sm.set_array([])
-        cbar = plt.colorbar(sm, ax=ax, pad=0.01, aspect=30)
-        cbar.set_label('Feature value\n(normalized)', fontsize=10)
-        cbar.ax.set_yticks([0, 0.5, 1])
-        cbar.ax.set_yticklabels(['Low', 'Mid', 'High'])
+        cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.08, fraction=0.06)
+        cbar.set_label('Feature value (normalized)', fontsize=10)
+        cbar.set_ticks([0, 0.5, 1])
+        cbar.set_ticklabels(['Low', 'Mid', 'High'])
+
+        # Explicitly clarify vertical ordering semantics
+        ax.text(
+            0.02,
+            0.98,
+            'Top-to-bottom: decreasing feature importance (mean |SHAP|)',
+            transform=ax.transAxes,
+            fontsize=8,
+            va='top',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+        )
         
         # Add explanatory note
         ax.text(0.02, 0.02, 
