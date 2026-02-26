@@ -304,18 +304,20 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
             "label": "Operative duration (min)",
             "type": "slider",
             "min": 60,
-            "max": 420,
+            "max": 720,
             "default": 210,
-            "step": 5
+            "step": 5,
+            "help": "Cohort bounds: observed values ranged from 60 to 720 minutes."
         },
         {
             "column": "Blood_loss",
             "label": "Blood loss (mL)",
             "type": "slider",
             "min": 0,
-            "max": 1500,
+            "max": 8000,
             "default": 200,
-            "step": 10
+            "step": 10,
+            "help": "Cohort bounds: observed values ranged from 20 to 8000 mL."
         },
         {
             "column": "Blood_transfusion",
