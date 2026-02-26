@@ -216,7 +216,15 @@ class FinalImputedPipeline:
     def __init__(self, verbose: bool = True, plot_only: bool = False):
         self.verbose = verbose
         self.plot_only = plot_only
-        self.script_dir = Path(__file__).parent
+        # Resolve project root even when this script is launched from ./models
+        script_location = Path(__file__).resolve().parent
+        if (script_location / "base4.csv").exists():
+            self.script_dir = script_location
+        elif (script_location.parent / "base4.csv").exists():
+            self.script_dir = script_location.parent
+        else:
+            # Fallback to historical behavior
+            self.script_dir = script_location
         self.results_dir = self.script_dir / "results"
         self.output_dir = self.results_dir / "production_imputed"
         self.output_dir.mkdir(exist_ok=True, parents=True)
@@ -850,10 +858,26 @@ F1 Score: {metrics['F1 Score'][optimal_idx]:.3f}'''
     def generate_logistic_predictions(self):
         """Generate logistic regression predictions using MICE for comparison"""
         
-        # Load data
-        data_path = self.script_dir / "base_marc_anthony_05082025.csv"
+        # Load data (support deploy layout and parent-folder fallback)
+        candidate_paths = [
+            self.script_dir / "base_marc_anthony_05082025.csv",
+            self.script_dir.parent / "base_marc_anthony_05082025.csv",
+            self.script_dir / "base4.csv",
+            self.script_dir.parent / "base4.csv",
+        ]
+        data_path = next((path for path in candidate_paths if path.exists()), None)
+        if data_path is None:
+            raise FileNotFoundError("No compatible dataset found for logistic comparison")
+
         df = pd.read_csv(data_path)
-        y = df['Best_performers'].values
+        if 'Best_performers' in df.columns:
+            y = df['Best_performers'].values
+        elif 'Optimal_ideal_outcome' in df.columns:
+            y = df['Optimal_ideal_outcome'].values
+        elif 'Ideal_outcome' in df.columns:
+            y = df['Ideal_outcome'].values
+        else:
+            raise KeyError("No supported outcome column found (Best_performers/Optimal_ideal_outcome/Ideal_outcome)")
         
         # Prepare features (simplified set for logistic regression)
         X = pd.DataFrame()
@@ -1601,7 +1625,6 @@ P-value (DeLong): <0.001'''
                 feat_values_remapped[feat_values == 2] = 2  # active → 2
                 feat_values = feat_values_remapped
             
-            # Remap Center_expertise to match desired display order
             # Add y position for each sample
             y_pos.extend([i] * len(feat_shap))
             x_values_list.extend(feat_shap)
