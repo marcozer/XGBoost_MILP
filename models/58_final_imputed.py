@@ -1133,35 +1133,58 @@ P-value (DeLong): <0.001'''
         # Create SHAP explainer
         explainer = shap.TreeExplainer(self.final_model)
         shap_values = explainer.shap_values(self.X_imputed)
-        
-        # Save SHAP values for later use
-        self.shap_values = shap_values
-        
-        # 1. Feature importance bar plot with categorical indicators
-        self._plot_shap_importance_with_types(shap_values)
-        
-        # 2. Separate plots for continuous and categorical features
-        self._plot_shap_by_feature_type(shap_values)
-        
-        # 3. Binary features SHAP plot
-        self._plot_binary_features_shap(shap_values)
-        
-        # 4. Top categorical feature dependence plots
-        self._plot_categorical_dependence(shap_values)
-        
-        # 5. Standard summary plot with note about encoding
-        fig = plt.figure(figsize=(10, 8))
-        shap.summary_plot(shap_values, self.X_imputed, show=False, plot_size=(10, 8))
-        plt.title('SHAP Summary Plot - All Features\n(Note: Colors for categorical features represent encoded values)', 
-                 fontsize=12, fontweight='bold')
-        save_plot_all_formats(plt.gcf(), self.plots_dir, 'shap_summary_all')
-        plt.close()
-        
-        # 6. Integrated summary plot with proper binary labels
-        self._plot_integrated_shap_summary(shap_values)
-        
-        # 7. Clean summary plot with only continuous and binary features
-        self._plot_clean_shap_summary(shap_values)
+
+        # Keep Center_expertise in training/model, but remove it from SHAP displays.
+        excluded_from_shap = {"Center_expertise"}
+        original_X_imputed = self.X_imputed
+        original_continuous = list(self.continuous_features)
+        original_binary = list(self.binary_features)
+        original_categorical = list(self.categorical_features)
+
+        try:
+            display_columns = [c for c in self.X_imputed.columns if c not in excluded_from_shap]
+            display_indices = [self.X_imputed.columns.get_loc(c) for c in display_columns]
+            shap_values_display = shap_values[:, display_indices]
+
+            self.X_imputed = self.X_imputed[display_columns].copy()
+            self.continuous_features = [f for f in self.continuous_features if f not in excluded_from_shap]
+            self.binary_features = [f for f in self.binary_features if f not in excluded_from_shap]
+            self.categorical_features = [f for f in self.categorical_features if f not in excluded_from_shap]
+
+            # Save filtered SHAP values for display-oriented downstream usage.
+            self.shap_values = shap_values_display
+
+            # 1. Feature importance bar plot with categorical indicators
+            self._plot_shap_importance_with_types(shap_values_display)
+
+            # 2. Separate plots for continuous and categorical features
+            self._plot_shap_by_feature_type(shap_values_display)
+
+            # 3. Binary features SHAP plot
+            self._plot_binary_features_shap(shap_values_display)
+
+            # 4. Top categorical feature dependence plots
+            self._plot_categorical_dependence(shap_values_display)
+
+            # 5. Standard summary plot with note about encoding
+            fig = plt.figure(figsize=(10, 8))
+            shap.summary_plot(shap_values_display, self.X_imputed, show=False, plot_size=(10, 8))
+            plt.title('SHAP Summary Plot - All Features\n(Note: Colors for categorical features represent encoded values)',
+                     fontsize=12, fontweight='bold')
+            save_plot_all_formats(plt.gcf(), self.plots_dir, 'shap_summary_all')
+            plt.close()
+
+            # 6. Integrated summary plot with proper binary labels
+            self._plot_integrated_shap_summary(shap_values_display)
+
+            # 7. Clean summary plot with only continuous and binary features
+            self._plot_clean_shap_summary(shap_values_display)
+        finally:
+            # Restore original state for non-display pipeline components.
+            self.X_imputed = original_X_imputed
+            self.continuous_features = original_continuous
+            self.binary_features = original_binary
+            self.categorical_features = original_categorical
     
     def _plot_shap_importance_with_types(self, shap_values):
         """Plot feature importance with type indicators"""
