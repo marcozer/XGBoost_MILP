@@ -1772,6 +1772,27 @@ P-value (DeLong): <0.001'''
             va='top',
             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
         )
+
+        # Add a right-side ranking guide to make the ordering explicit in print.
+        ax.annotate(
+            '',
+            xy=(1.02, 0.08),
+            xytext=(1.02, 0.92),
+            xycoords='axes fraction',
+            textcoords='axes fraction',
+            arrowprops=dict(arrowstyle='-', color='black', linewidth=1.2),
+            annotation_clip=False,
+        )
+        ax.text(
+            1.045,
+            0.50,
+            'Ranked by mean |SHAP| contribution',
+            transform=ax.transAxes,
+            rotation=-90,
+            va='center',
+            ha='left',
+            fontsize=8,
+        )
         
         # Add explanatory note
         ax.text(0.02, 0.02, 
