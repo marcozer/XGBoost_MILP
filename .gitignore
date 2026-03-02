@@ -35,3 +35,12 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local review / manuscript / LLM working files
+/REVISION_NUMBERS_S4_Q6.md
+/TODO_svg_pdf_manual.md
+/manuscript/
+/manuscripts/
+*.docx
+*.pptx
+results/production_imputed/visualizations/*_for_publication.svg
