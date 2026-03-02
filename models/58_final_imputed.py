@@ -46,6 +46,7 @@ from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 import shap
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
@@ -91,8 +92,14 @@ def save_plot_all_formats(fig, base_dir, name, dpi=300):
     
     for fmt in formats:
         output_path = base_dir / f'{name}.{fmt}'
-        fig.savefig(output_path, dpi=dpi, bbox_inches='tight', 
-                   facecolor='white', format=fmt)
+        if fmt == 'svg':
+            # Keep text as editable SVG text objects for Inkscape.
+            with mpl.rc_context({'svg.fonttype': 'none'}):
+                fig.savefig(output_path, dpi=dpi, bbox_inches='tight',
+                           facecolor='white', format=fmt)
+        else:
+            fig.savefig(output_path, dpi=dpi, bbox_inches='tight',
+                       facecolor='white', format=fmt)
         saved_paths.append(output_path)
     
     return saved_paths
