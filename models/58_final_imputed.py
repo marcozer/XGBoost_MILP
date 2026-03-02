@@ -1134,8 +1134,11 @@ P-value (DeLong): <0.001'''
         explainer = shap.TreeExplainer(self.final_model)
         shap_values = explainer.shap_values(self.X_imputed)
 
-        # Keep Center_expertise in training/model, but remove it from SHAP displays.
-        excluded_from_shap = {"Center_expertise"}
+        # Keep center-volume variables in training/model, but remove them from SHAP displays.
+        excluded_from_shap = {
+            "Center_expertise",
+            "pancreatic_texture_missing",
+        }
         original_X_imputed = self.X_imputed
         original_continuous = list(self.continuous_features)
         original_binary = list(self.binary_features)
