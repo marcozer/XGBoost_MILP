@@ -42,8 +42,19 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
             "column": "Center_type",
             "label": "Center type",
             "type": "select",
-            "options": ["CHG", "CHU", "ESPIC", "LIB"],
-            "default": "CHU",
+            "options": [
+                "Peripheral hospital",
+                "University hospital",
+                "Private non-profit hospital",
+                "Private hospital",
+            ],
+            "default": "University hospital",
+            "value_map": {
+                "Peripheral hospital": "CHG",
+                "University hospital": "CHU",
+                "Private non-profit hospital": "ESPIC",
+                "Private hospital": "LIB",
+            },
             "help": "Institution category"
         },
         {
@@ -236,10 +247,15 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
     "Operative plan": [
         {
             "column": "LDP_modalities ",
-            "label": "LSP modality (left splenopancreatectomy context)",
+            "label": "Left pancreatectomy modality",
             "type": "select",
-            "options": ["Warshaw", "Kimura", "distal splenopancreatectomy"],
-            "default": "distal splenopancreatectomy"
+            "options": ["Warshaw", "Kimura", "Left splenopancreatectomy"],
+            "default": "Left splenopancreatectomy",
+            "value_map": {
+                "Warshaw": "warshaw",
+                "Kimura": "kimura",
+                "Left splenopancreatectomy": "distal_splenopancreatectomy",
+            },
         },
         {
             "column": "Robotic_assisted",
@@ -295,7 +311,7 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
     "Intraoperative course": [
         {
             "column": "Panned_splenectomy",
-            "label": "Planned splenectomy (recorded intra-operatively)",
+            "label": "Planned splenectomy",
             "type": "checkbox",
             "default": True
         },
@@ -332,8 +348,13 @@ FEATURE_DEFINITIONS: Dict[str, List[Dict[str, Any]]] = {
             "column": "Drainage_modalities",
             "label": "Drainage modality",
             "type": "select",
-            "options": ["active", "passive"],
-            "default": "passive"
+            "options": ["No drainage", "Passive", "Active"],
+            "default": "Passive",
+            "value_map": {
+                "No drainage": "0",
+                "Passive": "passive",
+                "Active": "active",
+            },
         },
         {
             "column": "Cholecystectomy",
@@ -481,8 +502,14 @@ def collect_user_inputs() -> Dict[str, Any]:
 
 def preprocess_user_inputs(inputs: Dict[str, Any], feature_columns: List[str]) -> pd.DataFrame:
     record: Dict[str, Any] = {}
+    value_maps = {
+        feature["column"]: feature.get("value_map", {})
+        for features in FEATURE_DEFINITIONS.values()
+        for feature in features
+    }
+
     for column, value in inputs.items():
-        record[column] = value
+        record[column] = value_maps.get(column, {}).get(value, value)
 
     # Handle explicit missing indicators
     missing_pairs = [
